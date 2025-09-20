@@ -41,11 +41,23 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Resolve API base from env or from backendUrl
+  const apiBase = import.meta.env.VITE_API_BASE || (backendUrl.replace(/\/chat$/, ""));
+
   // Helper to build plan request
   const askPlan = async (eventType, answers) => {
-    const { date, venue, people, time, budget } = answers;
-    const planPrompt = `You are an expert ${eventType} event planner. Using the following inputs, generate a detailed, structured event management plan with sections: Overview, Timeline/Schedule, Venue & Layout, Logistics (AV, seating, registration), Staffing & Roles, Budget Breakdown, Vendor Recommendations, Risk & Contingency, and Next Steps. Keep it practical and actionable.\n\nInputs:\n- Date: ${date}\n- Venue: ${venue}\n- People: ${people}\n- Time/Duration: ${time}\n- Budget: ${budget}\n`;
-    await chat(planPrompt);
+    try {
+      const resp = await fetch(`${apiBase}/api/event-plan`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event_type: eventType, answers })
+      });
+      const data = await resp.json();
+      const inbound = Array.isArray(data?.response?.messages) ? data.response.messages : [];
+      setMessages(prev => [...prev, ...inbound]);
+    } catch (e) {
+      console.error('askPlan error', e);
+    }
   };
 
   // Process messages queue

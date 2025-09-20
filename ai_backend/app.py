@@ -23,7 +23,10 @@ logger = logging.getLogger(__name__)
 conversation_history: Dict[str, List] = {}
 translator = Translator()
 
+# # Securely load GROQ API key from environment
 # GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+# if not GROQ_API_KEY:
+#     logger.warning("GROQ_API_KEY not found in environment. Set it in .env or environment variables.")
 llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="key")
 
 # Enhanced land price data with regional support
@@ -261,9 +264,9 @@ def generate_event_plan():
         lang = data.get('language', 'en')
 
         prompt = (
-            f"You are an expert {event_type} event planner. Using the inputs below, generate a detailed, structured event management plan with sections: "
-            "Overview, Timeline/Schedule, Venue & Layout, Logistics (AV, seating, registration), Staffing & Roles, Budget Breakdown, "
-            "Vendor Recommendations, Risk & Contingency, and Next Steps. Keep it practical and actionable.\n\n"
+            f"You are an expert {event_type} event planner. Using the inputs below, generate a detailed, structured event management plan strictly as a SINGLE VALID JSON object with keys: "
+            f"overview, timeline, venue_layout, logistics, staffing_roles, budget_breakdown, vendors, risk_contingency, next_steps. "
+            f"Do not add any explanations or markdown. Return ONLY JSON. Use INR symbols where applicable.\n\n"
             f"Inputs:\n"
             f"- Date: {answers.get('date','')}\n"
             f"- Venue: {answers.get('venue','')}\n"
@@ -272,19 +275,40 @@ def generate_event_plan():
             f"- Budget: {answers.get('budget','')}\n"
         )
 
-        result = llm.invoke([SystemMessage(content="You create event plans."), HumanMessage(content=prompt)])
-        plan_text = result.content if isinstance(result.content, str) else str(result.content)
+        result = llm.invoke([
+            SystemMessage(content=load_prompt()),
+            HumanMessage(content=prompt)
+        ])
+        content = result.content if isinstance(result.content, str) else str(result.content)
 
+        plan_json = None
+        try:
+            plan_json = json.loads(content)
+        except json.JSONDecodeError:
+            # If not JSON, wrap as simple text plan
+            plan_json = {"overview": content}
+
+        # Translate plan_json values if non-English requested
         if lang and lang != 'en':
             try:
-                plan_text = translator.translate(plan_text, src='en', dest=lang).text
+                def tr(val):
+                    if isinstance(val, str):
+                        return translator.translate(val, src='en', dest=lang).text
+                    if isinstance(val, list):
+                        return [tr(v) for v in val]
+                    if isinstance(val, dict):
+                        return {k: tr(v) for k, v in val.items()}
+                    return val
+                plan_json = tr(plan_json)
             except Exception:
                 pass
 
+        plan_text_for_message = json.dumps(plan_json, ensure_ascii=False)
         response_payload = {
             "messages": [
-                {"text": plan_text, "facialExpression": "smile", "animation": "Talking_1"}
-            ]
+                {"text": plan_text_for_message, "facialExpression": "default", "animation": "Idle"}
+            ],
+            "plan_json": plan_json
         }
         return jsonify({"response": response_payload})
     except Exception as e:

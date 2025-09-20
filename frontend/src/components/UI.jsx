@@ -319,9 +319,23 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
           <div className="pointer-events-auto bg-white/80 rounded-xl shadow border p-3">
             <div className="font-semibold text-purple-800 mb-2">AI Responses</div>
             <div className="max-h-80 overflow-y-auto space-y-2">
-              {history.slice(-12).map((m, idx) => (
-                <div key={idx} className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">{m.text}</div>
-              ))}
+              {history.slice(-12).map((m, idx) => {
+                const t = m.text || '';
+                let isJson = false;
+                let pretty = '';
+                try {
+                  const trimmed = t.trim();
+                  if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    pretty = JSON.stringify(JSON.parse(trimmed), null, 2);
+                    isJson = true;
+                  }
+                } catch (e) {}
+                return (
+                  <div key={idx} className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">
+                    {isJson ? <pre className="text-xs overflow-x-auto">{pretty}</pre> : t}
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>

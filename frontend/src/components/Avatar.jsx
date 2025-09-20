@@ -147,7 +147,7 @@ export function Avatar(props) {
         voice => 
           voice.name.includes('Google US English') ||
           voice.name.includes('Microsoft Zira') ||
-          voice.name.includes('Samantha') ||
+          voice.name.includes('keerthi') ||
           (voice.name.includes('Female') && voice.lang.includes('en'))
       ) || voices[0];
 
@@ -205,15 +205,25 @@ export function Avatar(props) {
           }, 2000);
         }
 
-        const cleanText = message.text.replace(/[^\w\s.,!?-]/g, '');
-        
+        const rawText = message.text || "";
+        const isJson = (t) => {
+          if (!t) return false;
+          const s = t.trim();
+          if (!(s.startsWith('{') || s.startsWith('['))) return false;
+          try { JSON.parse(s); return true; } catch { return false; }
+        };
+
+        // If the response is JSON (e.g., detailed plan), do NOT speak it.
+        if (isJson(rawText)) {
+          onMessagePlayed();
+          return;
+        }
+
+        const cleanText = rawText.replace(/[^\w\s.,!?-]/g, '');
         if (cleanText) {
           await speakText(cleanText);
-          onMessagePlayed();
-        } else {
-          onMessagePlayed();
         }
-      } catch (error) {
+        onMessagePlayed()      } catch (error) {
         console.error('Error processing message:', error);
         onMessagePlayed();
       }
