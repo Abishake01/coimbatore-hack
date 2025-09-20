@@ -144,31 +144,23 @@ export function Avatar(props) {
 
       const voices = window.speechSynthesis.getVoices();
       const pickVoice = () => {
-        const langMap = {
-          en: ['en-IN', 'en-US', 'en-GB'],
-          ta: ['ta-IN'],
-          te: ['te-IN'],
-          ml: ['ml-IN'],
-          hi: ['hi-IN']
-        };
-        const prefs = langMap[language] || ['en-IN','en-US'];
-        for (const pref of prefs) {
-          const v = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(pref.toLowerCase()));
-          if (v) return v;
-        }
-        // Fallback by name hints
-        if (language === 'hi') return voices.find(v=>/Hindi/i.test(v.name)) || voices[0];
-        if (language === 'ta') return voices.find(v=>/Tamil|ta-IN/i.test(v.name)) || voices[0];
-        if (language === 'te') return voices.find(v=>/Telugu|te-IN/i.test(v.name)) || voices[0];
-        if (language === 'ml') return voices.find(v=>/Malayalam|ml-IN/i.test(v.name)) || voices[0];
-        return voices.find(v => /English|en-/i.test(v.lang)) || voices[0];
+        // Always try to use a good Hindi female voice across languages for consistent timbre
+        const preferFemale = (v) => /female|zira|asha|priya|sonia|heera|meera|uma|ananya/i.test(v.name || '') || /female/i.test(v.lang || '');
+        const hiVoices = voices.filter(v => /Hindi|hi-IN/i.test((v.name||'') + (v.lang||'')));
+        const hiFemale = hiVoices.find(preferFemale);
+        if (hiFemale) return hiFemale;
+        if (hiVoices.length) return hiVoices[0];
+        // Fallback: any female voice
+        const anyFemale = voices.find(preferFemale);
+        if (anyFemale) return anyFemale;
+        return voices[0];
       };
       const selectedVoice = pickVoice();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = selectedVoice;
-      // Set utterance language to match selection
-      utterance.lang = (selectedVoice && selectedVoice.lang) || (language === 'en' ? 'en-IN' : language + '-IN');
+      // Force language to hi-IN to keep the same timbre across languages as requested
+      utterance.lang = 'hi-IN';
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
@@ -224,7 +216,13 @@ export function Avatar(props) {
         const rawText = message.text || "";
         const isJson = (t) => {
           if (!t) return false;
-          const s = t.trim();
+          let s = t.trim();
+          // Strip markdown code fences if present
+          if (s.startsWith('```')) {
+            s = s.replace(/^```[a-zA-Z0-9]*\n?/, '').replace(/```$/, '').trim();
+          }
+          // Very long content is likely non-speech data
+          if (s.length > 300 && (s.includes('{') || s.includes('['))) return true;
           if (!(s.startsWith('{') || s.startsWith('['))) return false;
           try { JSON.parse(s); return true; } catch { return false; }
         };

@@ -29,11 +29,40 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
     time: '2 days',
     budget: '₹5,00,000'
   });
+  const [questions, setQuestions] = useState([]);
+
+  // API base to fetch event questions
+  const apiBase = (import.meta.env.VITE_API_BASE || (import.meta.env.VITE_BACKEND_URL ? import.meta.env.VITE_BACKEND_URL.replace(/\/chat$/, '') : 'http://localhost:5000'));
 
   React.useEffect(() => {
     if (initialStage) setStage(initialStage);
     if (initialAI) setSelectedAI(initialAI);
   }, [initialStage, initialAI]);
+
+  // Fetch event-specific questions when selectedAI changes and entering Q&A
+  React.useEffect(() => {
+    const loadQuestions = async () => {
+      if (stage !== 'qna' || !selectedAI) return;
+      try {
+        const res = await fetch(`${apiBase}/api/event-questions/${selectedAI}`);
+        const data = await res.json();
+        const qs = Array.isArray(data?.questions) ? data.questions : [];
+        setQuestions(qs);
+        // Seed defaults from placeholders if provided
+        const seeded = { ...answers };
+        qs.forEach(q => {
+          if (q?.key && q?.placeholder && (!seeded[q.key] || seeded[q.key] === '')) {
+            seeded[q.key] = q.placeholder;
+          }
+        });
+        setAnswers(seeded);
+      } catch (e) {
+        // Silent fail, keep existing defaults
+      }
+    };
+    loadQuestions();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [stage, selectedAI]);
 
   const sendMessage = (text) => {
     if (!loading && !message && text && text.trim()) {
@@ -284,7 +313,14 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
         <div className="absolute inset-0 z-10 flex items-start justify-center pt-24 pointer-events-none">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl pointer-events-auto">
             {AI_TYPES.map(card => (
-              <button key={card.key} onClick={() => { setSelectedAI(card.key); setStage('qna'); setStep(1); }} className={`p-6 rounded-2xl text-left text-white bg-gradient-to-br ${card.color} shadow-lg hover:scale-[1.02] transition`}>
+              <button key={card.key} onClick={() => {
+                setSelectedAI(card.key);
+                setStage('qna');
+                setStep(1);
+                setQuestions([]);
+                // Reset answers; will be seeded by placeholders after fetch
+                setAnswers({ date: '', venue: '', people: '', time: '', budget: '' });
+              }} className={`p-6 rounded-2xl text-left text-white bg-gradient-to-br ${card.color} shadow-lg hover:scale-[1.02] transition`}>
                 <div className="text-2xl font-bold mb-2">{card.name}</div>
                 <div className="opacity-90 text-sm">Specialized planning prompts for {card.name.replace(' AI','').toLowerCase()}s</div>
               </button>
@@ -297,36 +333,23 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <div className="backdrop-blur-md bg-white/50 border border-white/60 rounded-2xl p-6 w-full max-w-xl pointer-events-auto">
             <h2 className="text-xl font-bold mb-4 text-purple-800">Provide event details</h2>
-            {step === 1 && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Date</label>
-                <input type="text" value={answers.date} onChange={e=>setAnswers({...answers,date:e.target.value})} placeholder="e.g., 20 Oct 2025" className="w-full p-3 rounded-md border" />
-              </div>
-            )}
-            {step === 2 && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Venue</label>
-                <input type="text" value={answers.venue} onChange={e=>setAnswers({...answers,venue:e.target.value})} placeholder="e.g., Convention Center" className="w-full p-3 rounded-md border" />
-              </div>
-            )}
-            {step === 3 && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">People</label>
-                <input type="text" value={answers.people} onChange={e=>setAnswers({...answers,people:e.target.value})} placeholder="e.g., 300 attendees" className="w-full p-3 rounded-md border" />
-              </div>
-            )}
-            {step === 4 && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Time / Duration</label>
-                <input type="text" value={answers.time} onChange={e=>setAnswers({...answers,time:e.target.value})} placeholder="e.g., 2 days" className="w-full p-3 rounded-md border" />
-              </div>
-            )}
-            {step === 5 && (
-              <div className="space-y-3">
-                <label className="block text-sm font-medium">Budget</label>
-                <input type="text" value={answers.budget} onChange={e=>setAnswers({...answers,budget:e.target.value})} placeholder="e.g., $50,000" className="w-full p-3 rounded-md border" />
-              </div>
-            )}
+            {(() => {
+              const q = questions[step - 1];
+              if (!q) return <div className="text-sm text-gray-600">Loading questions…</div>;
+              const val = answers[q.key] ?? '';
+              return (
+                <div className="space-y-3">
+                  <label className="block text-sm font-medium">{q.label || q.question}</label>
+                  <input
+                    type="text"
+                    value={val}
+                    onChange={e => setAnswers({ ...answers, [q.key]: e.target.value })}
+                    placeholder={q.placeholder || ''}
+                    className="w-full p-3 rounded-md border"
+                  />
+                </div>
+              );
+            })()}
             <div className="flex justify-between mt-6">
               <button onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-md border">Back</button>
               <button onClick={proceedQna} className="px-6 py-2 rounded-md bg-purple-600 text-white">{step < 5 ? 'Next' : 'Generate Plan'}</button>
@@ -343,7 +366,9 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
               {message && (
                 <div className="bg-purple-50 rounded p-2 text-xs text-gray-600 animate-pulse">Generating response…</div>
               )}
-              {history.slice(-12).map((m, idx) => {
+              {(() => {
+                const m = history[history.length - 1];
+                if (!m) return null;
                 const t = m.text || '';
                 let isJson = false;
                 let pretty = '';
@@ -355,11 +380,11 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
                   }
                 } catch (e) {}
                 return (
-                  <div key={idx} className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">
+                  <div className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">
                     {isJson ? <pre className="text-xs overflow-x-auto">{pretty}</pre> : t}
                   </div>
                 );
-              })}
+              })()}
             </div>
           </div>
         </div>

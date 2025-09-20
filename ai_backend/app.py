@@ -101,10 +101,7 @@ def chat():
         try:
             parsed_response = json.loads(output_str)
             
-            # Enhance response with additional data if needed
-            if "land_price" in query.lower():
-                region = extract_region(query)
-                parsed_response = enhance_with_land_price(parsed_response, region)
+            # Land price enhancement removed for this project
             
             # Ensure a brief speech-friendly message exists even if content is JSON-only
             try:
@@ -214,12 +211,61 @@ EVENT_TYPES = {
 
 EVENT_QUESTIONS = {
     "default": [
-        {"step": 1, "key": "date", "label": "Date", "question": "When is the event?"},
-        {"step": 2, "key": "venue", "label": "Venue", "question": "Where will it take place?"},
-        {"step": 3, "key": "people", "label": "People", "question": "How many attendees?"},
-        {"step": 4, "key": "time", "label": "Time", "question": "What's the duration or start time?"},
-        {"step": 5, "key": "budget", "label": "Budget", "question": "What's your budget?"},
-    ]
+        {"step": 1, "key": "date", "label": "Date", "question": "When is the event?", "placeholder": "20 Oct 2025"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Where will it take place?", "placeholder": "Convention Center"},
+        {"step": 3, "key": "people", "label": "People", "question": "How many attendees?", "placeholder": "300 attendees"},
+        {"step": 4, "key": "time", "label": "Time", "question": "What's the duration or start time?", "placeholder": "2 days"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "What's your budget?", "placeholder": "₹5,00,000"},
+    ],
+    "hackathon": [
+        {"step": 1, "key": "date", "label": "Hackathon Dates", "question": "When will the hackathon run?", "placeholder": "12-14 Dec 2025"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Where is the venue (campus/tech park)?", "placeholder": "NIT Auditorium"},
+        {"step": 3, "key": "people", "label": "Participants", "question": "Expected number of hackers/teams?", "placeholder": "200 hackers"},
+        {"step": 4, "key": "time", "label": "Duration", "question": "Event duration and daily schedule?", "placeholder": "48 hours with opening/closing"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Overall budget?", "placeholder": "₹8,00,000"},
+    ],
+    "wedding": [
+        {"step": 1, "key": "date", "label": "Wedding Date", "question": "What is the wedding date?", "placeholder": "21 Jan 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Which venue or city?", "placeholder": "Sri Mahal, Coimbatore"},
+        {"step": 3, "key": "people", "label": "Guests", "question": "Approximate guest count?", "placeholder": "500 guests"},
+        {"step": 4, "key": "time", "label": "Ceremony Timing", "question": "Muhurtham / ceremony start time?", "placeholder": "6:30 AM"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Overall budget?", "placeholder": "₹15,00,000"},
+    ],
+    "birthday": [
+        {"step": 1, "key": "date", "label": "Date", "question": "When is the birthday?", "placeholder": "10 Feb 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Where is the party venue?", "placeholder": "Home / Party Hall"},
+        {"step": 3, "key": "people", "label": "Guests", "question": "Guest count (kids/adults)?", "placeholder": "30 kids, 20 adults"},
+        {"step": 4, "key": "time", "label": "Time", "question": "Start time and duration?", "placeholder": "5 PM, 3 hours"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget range?", "placeholder": "₹50,000"},
+    ],
+    "corporate": [
+        {"step": 1, "key": "date", "label": "Event Date", "question": "When is the corporate event?", "placeholder": "5 Mar 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Where will it be hosted?", "placeholder": "Hotel Ballroom"},
+        {"step": 3, "key": "people", "label": "Attendees", "question": "Expected attendee count?", "placeholder": "250"},
+        {"step": 4, "key": "time", "label": "Agenda", "question": "Agenda duration and key sessions?", "placeholder": "9 AM–6 PM"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹10,00,000"},
+    ],
+    "concert": [
+        {"step": 1, "key": "date", "label": "Concert Date", "question": "When is the concert?", "placeholder": "18 Apr 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Which venue?", "placeholder": "Open Grounds"},
+        {"step": 3, "key": "people", "label": "Audience", "question": "Expected audience size?", "placeholder": "5,000"},
+        {"step": 4, "key": "time", "label": "Show Time", "question": "Start time and run time?", "placeholder": "7 PM, 3 hours"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹50,00,000"},
+    ],
+    "festival": [
+        {"step": 1, "key": "date", "label": "Festival Dates", "question": "Festival dates?", "placeholder": "1–3 May 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Location and grounds?", "placeholder": "City Fairgrounds"},
+        {"step": 3, "key": "people", "label": "Crowd", "question": "Expected daily footfall?", "placeholder": "10,000/day"},
+        {"step": 4, "key": "time", "label": "Hours", "question": "Daily operating hours?", "placeholder": "10 AM–10 PM"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹1,00,00,000"},
+    ],
+    "sports": [
+        {"step": 1, "key": "date", "label": "Match Dates", "question": "Event dates?", "placeholder": "8–10 Jun 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Stadium/ground?", "placeholder": "City Stadium"},
+        {"step": 3, "key": "people", "label": "Teams/Players", "question": "How many teams/players?", "placeholder": "8 teams"},
+        {"step": 4, "key": "time", "label": "Schedule", "question": "Match schedule pattern?", "placeholder": "League + Finals"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹12,00,000"},
+    ],
 }
 
 @app.route('/api/event-types', methods=['GET'])

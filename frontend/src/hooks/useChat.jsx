@@ -61,7 +61,9 @@ export const ChatProvider = ({ children }) => {
       });
       const data = await resp.json();
       const inbound = Array.isArray(data?.response?.messages) ? data.response.messages : [];
-      setMessages(prev => [...prev, ...inbound]);
+      // If plan_json exists, enqueue a JSON message first so the left panel shows it (Avatar will skip speaking it)
+      const jsonMsg = data?.response?.plan_json ? [{ text: JSON.stringify(data.response.plan_json) }] : [];
+      setMessages(prev => [...prev, ...jsonMsg, ...inbound]);
     } catch (e) {
       console.error('askPlan error', e);
     }
