@@ -16,7 +16,7 @@ const AI_TYPES = [
 export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const input = useRef();
   const [isListening, setIsListening] = useState(false);
-  const { chat, askPlan, loading, cameraZoomed, setCameraZoomed, message, history } = useChat();
+  const { chat, askPlan, loading, cameraZoomed, setCameraZoomed, message, history, language, setLanguage } = useChat();
 
   // Stages: landing -> dashboard -> qna -> chat
   const [stage, setStage] = useState(initialStage || 'landing');
@@ -93,7 +93,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
     <div className="overflow-hidden min-h-screen">
       <div className="fixed top-0 left-0 right-0 bottom-0 z-10 flex justify-between p-4 flex-col pointer-events-none">
         {/* Stage header */}
-        <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-3 sm:p-4 rounded-lg max-w-full sm:max-w-md">
+        <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-3 sm:p-4 rounded-lg max-w-full sm:max-w-2xl">
           {stage === 'landing' && (
             <>
               <h1 className="font-bold text-xl lg:text-2xl text-purple-800">Event Management</h1>
@@ -118,6 +118,21 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
               <p className="text-xs sm:text-sm lg:text-base">Chat and refine your plan. The avatar will speak the plan.</p>
             </>
           )}
+          {/* Language selector */}
+          <div className="mt-2">
+            <label className="text-xs mr-2">Language</label>
+            <select
+              value={language}
+              onChange={(e)=>setLanguage(e.target.value)}
+              className="pointer-events-auto text-xs border rounded px-2 py-1 bg-white/80"
+            >
+              <option value="en">English</option>
+              <option value="ta">Tamil</option>
+              <option value="te">Telugu</option>
+              <option value="ml">Malayalam</option>
+              <option value="hi">Hindi</option>
+            </select>
+          </div>
         </div>
         <div className="w-full flex flex-col sm:flex-row items-end justify-center gap-4" style={{ display: 'grid', justifyItems: 'start', alignContent: 'stretch', justifyContent: 'end' }}>
           <button

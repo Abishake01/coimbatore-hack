@@ -13,6 +13,13 @@ export const ChatProvider = ({ children }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const processingRef = useRef(false);
   const [history, setHistory] = useState([]);
+  const [language, setLanguage] = useState(
+    localStorage.getItem('ai_language') || 'en'
+  );
+
+  useEffect(() => {
+    localStorage.setItem('ai_language', language);
+  }, [language]);
 
   const chat = async (message) => {
     setLoading(true);
@@ -23,7 +30,7 @@ export const ChatProvider = ({ children }) => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ message }),
+        body: JSON.stringify({ message, language }),
       });
   
       const resp = await data.json();
@@ -50,7 +57,7 @@ export const ChatProvider = ({ children }) => {
       const resp = await fetch(`${apiBase}/api/event-plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_type: eventType, answers })
+        body: JSON.stringify({ event_type: eventType, answers, language })
       });
       const data = await resp.json();
       const inbound = Array.isArray(data?.response?.messages) ? data.response.messages : [];
@@ -89,6 +96,8 @@ export const ChatProvider = ({ children }) => {
         cameraZoomed,
         setCameraZoomed,
         history,
+        language,
+        setLanguage,
       }}
     >
       {children}
