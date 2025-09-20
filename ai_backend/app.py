@@ -9,6 +9,9 @@ from googletrans import Translator, LANGUAGES
 from bs4 import BeautifulSoup
 import logging
 from typing import Dict, List
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -20,8 +23,8 @@ logger = logging.getLogger(__name__)
 conversation_history: Dict[str, List] = {}
 translator = Translator()
 
-GROQ_API_KEY = os.getenv("GROQ_API_KEY")
-llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=GROQ_API_KEY)
+# GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="key")
 
 # Enhanced land price data with regional support
 LAND_PRICES = {
@@ -214,6 +217,79 @@ def create_fallback_response(text: str, language: str) -> dict:
             }
         ]
     }
+
+# ==========================
+# Event Management Endpoints
+# ==========================
+
+EVENT_TYPES = {
+    "hackathon": {"name": "Hackathon AI", "icon": "💻", "color": "from-blue-500 to-indigo-600"},
+    "wedding": {"name": "Wedding AI", "icon": "💒", "color": "from-pink-500 to-rose-600"},
+    "birthday": {"name": "Birthday AI", "icon": "🎂", "color": "from-yellow-400 to-orange-500"},
+    "corporate": {"name": "Corporate AI", "icon": "🏢", "color": "from-gray-500 to-blue-700"},
+    "concert": {"name": "Concert AI", "icon": "🎵", "color": "from-purple-500 to-fuchsia-600"},
+    "festival": {"name": "Fest AI", "icon": "🎪", "color": "from-green-500 to-teal-600"},
+    "sports": {"name": "Sports AI", "icon": "⚽", "color": "from-red-500 to-orange-600"}
+}
+
+EVENT_QUESTIONS = {
+    "default": [
+        {"step": 1, "key": "date", "label": "Date", "question": "When is the event?"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Where will it take place?"},
+        {"step": 3, "key": "people", "label": "People", "question": "How many attendees?"},
+        {"step": 4, "key": "time", "label": "Time", "question": "What's the duration or start time?"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "What's your budget?"},
+    ]
+}
+
+@app.route('/api/event-types', methods=['GET'])
+def get_event_types():
+    return jsonify({"event_types": EVENT_TYPES})
+
+
+@app.route('/api/event-questions/<event_type>', methods=['GET'])
+def get_event_questions(event_type: str):
+    return jsonify({"questions": EVENT_QUESTIONS.get(event_type, EVENT_QUESTIONS["default"])})
+
+
+@app.route('/api/event-plan', methods=['POST'])
+def generate_event_plan():
+    try:
+        data = request.get_json(force=True)
+        event_type = data.get('event_type', 'event')
+        answers = data.get('answers', {})
+        lang = data.get('language', 'en')
+
+        prompt = (
+            f"You are an expert {event_type} event planner. Using the inputs below, generate a detailed, structured event management plan with sections: "
+            "Overview, Timeline/Schedule, Venue & Layout, Logistics (AV, seating, registration), Staffing & Roles, Budget Breakdown, "
+            "Vendor Recommendations, Risk & Contingency, and Next Steps. Keep it practical and actionable.\n\n"
+            f"Inputs:\n"
+            f"- Date: {answers.get('date','')}\n"
+            f"- Venue: {answers.get('venue','')}\n"
+            f"- People: {answers.get('people','')}\n"
+            f"- Time/Duration: {answers.get('time','')}\n"
+            f"- Budget: {answers.get('budget','')}\n"
+        )
+
+        result = llm.invoke([SystemMessage(content="You create event plans."), HumanMessage(content=prompt)])
+        plan_text = result.content if isinstance(result.content, str) else str(result.content)
+
+        if lang and lang != 'en':
+            try:
+                plan_text = translator.translate(plan_text, src='en', dest=lang).text
+            except Exception:
+                pass
+
+        response_payload = {
+            "messages": [
+                {"text": plan_text, "facialExpression": "smile", "animation": "Talking_1"}
+            ]
+        }
+        return jsonify({"response": response_payload})
+    except Exception as e:
+        logger.error(f"/api/event-plan error: {e}")
+        return jsonify({"error": "Failed to generate plan"}), 500
 
 if __name__ == '__main__':
     app.run(debug=True, host="0.0.0.0", port=5000)

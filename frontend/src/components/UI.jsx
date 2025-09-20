@@ -1,12 +1,33 @@
-import { useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { useChat } from "../hooks/useChat";
 import { FaMicrophone } from "react-icons/fa";
 import { IoSend } from "react-icons/io5";
 
-export const UI = ({ hidden, ...props }) => {
+const AI_TYPES = [
+  { key: 'hackathon', name: 'Hackathon AI', color: 'from-blue-500 to-indigo-600' },
+  { key: 'wedding', name: 'Wedding AI', color: 'from-pink-500 to-rose-600' },
+  { key: 'birthday', name: 'Birthday AI', color: 'from-yellow-400 to-orange-500' },
+  { key: 'corporate', name: 'Corporate AI', color: 'from-gray-500 to-blue-700' },
+  { key: 'concert', name: 'Concert AI', color: 'from-purple-500 to-fuchsia-600' },
+  { key: 'festival', name: 'Fest AI', color: 'from-green-500 to-teal-600' },
+  { key: 'sports', name: 'Sports AI', color: 'from-red-500 to-orange-600' },
+];
+
+export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const input = useRef();
   const [isListening, setIsListening] = useState(false);
-  const { chat, loading, cameraZoomed, setCameraZoomed, message } = useChat();
+  const { chat, askPlan, loading, cameraZoomed, setCameraZoomed, message, history } = useChat();
+
+  // Stages: landing -> dashboard -> qna -> chat
+  const [stage, setStage] = useState(initialStage || 'landing');
+  const [selectedAI, setSelectedAI] = useState(initialAI || null);
+  const [step, setStep] = useState(1);
+  const [answers, setAnswers] = useState({ date: '', venue: '', people: '', time: '', budget: '' });
+
+  React.useEffect(() => {
+    if (initialStage) setStage(initialStage);
+    if (initialAI) setSelectedAI(initialAI);
+  }, [initialStage, initialAI]);
 
   const sendMessage = (text) => {
     if (!loading && !message && text && text.trim()) {
@@ -15,6 +36,15 @@ export const UI = ({ hidden, ...props }) => {
         input.current.value = "";
       }
     }
+  };
+
+  const proceedQna = async () => {
+    if (step < 5) {
+      setStep(step + 1);
+      return;
+    }
+    setStage('chat');
+    await askPlan(selectedAI || 'event', answers);
   };
 
   const startVoiceInput = () => {
@@ -62,17 +92,32 @@ export const UI = ({ hidden, ...props }) => {
   return (
     <div className="overflow-hidden min-h-screen">
       <div className="fixed top-0 left-0 right-0 bottom-0 z-10 flex justify-between p-4 flex-col pointer-events-none">
-        <div
-          className="self-start backdrop-blur-md bg-white bg-opacity-50 p-3 sm:p-4 rounded-lg max-w-full sm:max-w-md"
-          style={{ padding: '10px' }}
-        >
-          <h1
-            className="font-bold text-lg sm:text-xl lg:text-2xl text-purple-800"
-            style={{ fontSize: '90%' }}
-          >
-            Event Explorer
-          </h1>
-          <p className="text-xs sm:text-sm lg:text-base">I will always help you to find events</p>
+        {/* Stage header */}
+        <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-3 sm:p-4 rounded-lg max-w-full sm:max-w-md">
+          {stage === 'landing' && (
+            <>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">Event Management</h1>
+              <p className="text-xs sm:text-sm lg:text-base">Plan events with AI assistance and a 3D avatar.</p>
+            </>
+          )}
+          {stage === 'dashboard' && (
+            <>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">AI Hub</h1>
+              <p className="text-xs sm:text-sm lg:text-base">Choose an AI specialized for your event.</p>
+            </>
+          )}
+          {stage === 'qna' && (
+            <>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{selectedAI?.toUpperCase()} Planner</h1>
+              <p className="text-xs sm:text-sm lg:text-base">Step {step} of 5</p>
+            </>
+          )}
+          {stage === 'chat' && (
+            <>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{selectedAI?.toUpperCase()} Assistant</h1>
+              <p className="text-xs sm:text-sm lg:text-base">Chat and refine your plan. The avatar will speak the plan.</p>
+            </>
+          )}
         </div>
         <div className="w-full flex flex-col sm:flex-row items-end justify-center gap-4" style={{ display: 'grid', justifyItems: 'start', alignContent: 'stretch', justifyContent: 'end' }}>
           <button
@@ -169,6 +214,7 @@ export const UI = ({ hidden, ...props }) => {
             <p className="text-xs sm:text-sm lg:text-base text-gray-900">{message.text}</p>
           </div>
         )}
+        {/* Bottom input bar */}
         <div className="flex items-center gap-2 pointer-events-auto max-w-screen-sm w-full mx-auto mt-4">
           <input
             className="w-full placeholder:text-gray-800 placeholder:italic p-3 sm:p-4 rounded-md bg-opacity-50 bg-white backdrop-blur-md text-xs sm:text-sm"
@@ -199,6 +245,87 @@ export const UI = ({ hidden, ...props }) => {
           </button>
         </div>
       </div>
+
+      {/* Stage content sections */}
+      {stage === 'landing' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="backdrop-blur-md bg-white/40 border border-white/60 rounded-2xl p-8 max-w-2xl text-center pointer-events-auto">
+            <h1 className="text-3xl font-extrabold text-purple-800 mb-2">Event Management</h1>
+            <p className="text-gray-800 mb-6">Plan Hackathons, Weddings, Birthdays, Corporate events, Concerts, Festivals, and Sports with AI. Your 3D assistant will speak the plan.</p>
+            <button onClick={() => setStage('dashboard')} className="px-6 py-3 rounded-xl bg-gradient-to-r from-purple-500 to-pink-600 text-white font-semibold shadow">
+              Get Started
+            </button>
+          </div>
+        </div>
+      )}
+
+      {stage === 'dashboard' && (
+        <div className="absolute inset-0 z-10 flex items-start justify-center pt-24 pointer-events-none">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 max-w-5xl pointer-events-auto">
+            {AI_TYPES.map(card => (
+              <button key={card.key} onClick={() => { setSelectedAI(card.key); setStage('qna'); setStep(1); }} className={`p-6 rounded-2xl text-left text-white bg-gradient-to-br ${card.color} shadow-lg hover:scale-[1.02] transition`}>
+                <div className="text-2xl font-bold mb-2">{card.name}</div>
+                <div className="opacity-90 text-sm">Specialized planning prompts for {card.name.replace(' AI','').toLowerCase()}s</div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {stage === 'qna' && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
+          <div className="backdrop-blur-md bg-white/50 border border-white/60 rounded-2xl p-6 w-full max-w-xl pointer-events-auto">
+            <h2 className="text-xl font-bold mb-4 text-purple-800">Provide event details</h2>
+            {step === 1 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Date</label>
+                <input type="text" value={answers.date} onChange={e=>setAnswers({...answers,date:e.target.value})} placeholder="e.g., 20 Oct 2025" className="w-full p-3 rounded-md border" />
+              </div>
+            )}
+            {step === 2 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Venue</label>
+                <input type="text" value={answers.venue} onChange={e=>setAnswers({...answers,venue:e.target.value})} placeholder="e.g., Convention Center" className="w-full p-3 rounded-md border" />
+              </div>
+            )}
+            {step === 3 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">People</label>
+                <input type="text" value={answers.people} onChange={e=>setAnswers({...answers,people:e.target.value})} placeholder="e.g., 300 attendees" className="w-full p-3 rounded-md border" />
+              </div>
+            )}
+            {step === 4 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Time / Duration</label>
+                <input type="text" value={answers.time} onChange={e=>setAnswers({...answers,time:e.target.value})} placeholder="e.g., 2 days" className="w-full p-3 rounded-md border" />
+              </div>
+            )}
+            {step === 5 && (
+              <div className="space-y-3">
+                <label className="block text-sm font-medium">Budget</label>
+                <input type="text" value={answers.budget} onChange={e=>setAnswers({...answers,budget:e.target.value})} placeholder="e.g., $50,000" className="w-full p-3 rounded-md border" />
+              </div>
+            )}
+            <div className="flex justify-between mt-6">
+              <button onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-md border">Back</button>
+              <button onClick={proceedQna} className="px-6 py-2 rounded-md bg-purple-600 text-white">{step < 5 ? 'Next' : 'Generate Plan'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {stage === 'chat' && (
+        <div className="absolute left-4 top-24 z-10 w-80 max-w-[85vw] pointer-events-none">
+          <div className="pointer-events-auto bg-white/80 rounded-xl shadow border p-3">
+            <div className="font-semibold text-purple-800 mb-2">AI Responses</div>
+            <div className="max-h-80 overflow-y-auto space-y-2">
+              {history.slice(-12).map((m, idx) => (
+                <div key={idx} className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">{m.text}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

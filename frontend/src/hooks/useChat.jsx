@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 
-const backendUrl = "https://virtual-gf-py.vercel.app/chat";
+// Configurable backend URL (defaults to local)
+const backendUrl = import.meta.env.VITE_BACKEND_URL || "http://localhost:5000/chat";
 
 const ChatContext = createContext();
 
@@ -11,6 +12,7 @@ export const ChatProvider = ({ children }) => {
   const [cameraZoomed, setCameraZoomed] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
   const processingRef = useRef(false);
+  const [history, setHistory] = useState([]);
 
   const chat = async (message) => {
     setLoading(true);
@@ -25,12 +27,25 @@ export const ChatProvider = ({ children }) => {
       });
   
       const resp = await data.json();
-      setMessages(prev => [...prev, ...resp]);
+      // Support both {response:{messages:[]}} and direct array
+      const inbound = Array.isArray(resp)
+        ? resp
+        : Array.isArray(resp?.response?.messages)
+          ? resp.response.messages
+          : [];
+      setMessages(prev => [...prev, ...inbound]);
     } catch (error) {
       console.error("Chat error:", error);
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper to build plan request
+  const askPlan = async (eventType, answers) => {
+    const { date, venue, people, time, budget } = answers;
+    const planPrompt = `You are an expert ${eventType} event planner. Using the following inputs, generate a detailed, structured event management plan with sections: Overview, Timeline/Schedule, Venue & Layout, Logistics (AV, seating, registration), Staffing & Roles, Budget Breakdown, Vendor Recommendations, Risk & Contingency, and Next Steps. Keep it practical and actionable.\n\nInputs:\n- Date: ${date}\n- Venue: ${venue}\n- People: ${people}\n- Time/Duration: ${time}\n- Budget: ${budget}\n`;
+    await chat(planPrompt);
   };
 
   // Process messages queue
@@ -47,6 +62,7 @@ export const ChatProvider = ({ children }) => {
     setIsPlaying(false);
     processingRef.current = false;
     setMessages(prev => prev.slice(1));
+    setHistory(prev => (message ? [...prev, message] : prev));
     setMessage(null);
   };
 
@@ -54,11 +70,13 @@ export const ChatProvider = ({ children }) => {
     <ChatContext.Provider
       value={{
         chat,
+        askPlan,
         message,
         onMessagePlayed,
         loading,
         cameraZoomed,
         setCameraZoomed,
+        history,
       }}
     >
       {children}
