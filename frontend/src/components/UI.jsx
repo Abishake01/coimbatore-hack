@@ -22,7 +22,13 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const [stage, setStage] = useState(initialStage || 'landing');
   const [selectedAI, setSelectedAI] = useState(initialAI || null);
   const [step, setStep] = useState(1);
-  const [answers, setAnswers] = useState({ date: '', venue: '', people: '', time: '', budget: '' });
+  const [answers, setAnswers] = useState({
+    date: '20 Oct 2025',
+    venue: 'Convention Center',
+    people: '300 attendees',
+    time: '2 days',
+    budget: '₹5,00,000'
+  });
 
   React.useEffect(() => {
     if (initialStage) setStage(initialStage);
@@ -330,10 +336,13 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
       )}
 
       {stage === 'chat' && (
-        <div className="absolute left-4 top-24 z-10 w-80 max-w-[85vw] pointer-events-none">
+        <div className="absolute left-4 top-36 z-10 w-96 max-w-[85vw] pointer-events-none">
           <div className="pointer-events-auto bg-white/80 rounded-xl shadow border p-3">
             <div className="font-semibold text-purple-800 mb-2">AI Responses</div>
             <div className="max-h-80 overflow-y-auto space-y-2">
+              {message && (
+                <div className="bg-purple-50 rounded p-2 text-xs text-gray-600 animate-pulse">Generating response…</div>
+              )}
               {history.slice(-12).map((m, idx) => {
                 const t = m.text || '';
                 let isJson = false;

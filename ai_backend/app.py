@@ -106,6 +106,34 @@ def chat():
                 region = extract_region(query)
                 parsed_response = enhance_with_land_price(parsed_response, region)
             
+            # Ensure a brief speech-friendly message exists even if content is JSON-only
+            try:
+                if isinstance(parsed_response, dict):
+                    msgs = parsed_response.get('messages', []) or []
+                    def looks_like_json_text(t: str) -> bool:
+                        if not isinstance(t, str):
+                            return False
+                        s = t.strip()
+                        return s.startswith('{') or s.startswith('[')
+                    needs_summary = True
+                    for m in msgs:
+                        if m and isinstance(m, dict):
+                            txt = m.get('text', '')
+                            if txt and not looks_like_json_text(txt):
+                                needs_summary = False
+                                break
+                    if needs_summary:
+                        summary = "I've prepared an updated structured response. Please review the left panel."
+                        if language != 'en':
+                            try:
+                                summary = translator.translate(summary, src='en', dest=language).text
+                            except Exception:
+                                pass
+                        msgs.append({"text": summary, "facialExpression": "smile", "animation": "Talking_1"})
+                        parsed_response['messages'] = msgs
+            except Exception:
+                pass
+
             # Translate response if needed
             if language != 'en':
                 parsed_response = translate_response(parsed_response, language)
@@ -212,10 +240,22 @@ def generate_event_plan():
         answers = data.get('answers', {})
         lang = data.get('language', 'en')
 
+        # Event-specific prompt enrichment
+        EVENT_PROMPTS = {
+            "hackathon": "Focus on tracks, judging criteria, mentor slots, API partners, and submission process.",
+            "wedding": "Include rituals timeline, vendor coordination (decor, catering, photography), guest flow, and contingency for weather.",
+            "birthday": "Suggest theme, games/activities, decor, cake timing, return gifts, and kid-friendly logistics.",
+            "corporate": "Emphasize agenda, AV needs, registration flow, speaker management, and breakout sessions.",
+            "concert": "Cover stage plot, sound/lighting, artist rider, security, ticketing, and entry/exit flow.",
+            "festival": "Include multi-stage scheduling, stall/vendor zoning, crowd control, permissions, and sanitation.",
+            "sports": "Detail fixtures/schedule, officials, equipment, medical/safety, scorekeeping, and audience seating."
+        }
+
         prompt = (
             f"You are an expert {event_type} event planner. Using the inputs below, generate a detailed, structured event management plan strictly as a SINGLE VALID JSON object with keys: "
             f"overview, timeline, venue_layout, logistics, staffing_roles, budget_breakdown, vendors, risk_contingency, next_steps. "
-            f"Do not add any explanations or markdown. Return ONLY JSON. Use INR symbols where applicable.\n\n"
+            f"Do not add any explanations or markdown. Return ONLY JSON. Use INR symbols where applicable. "
+            f"Additional guidance: {EVENT_PROMPTS.get(event_type, '')}\n\n"
             f"Inputs:\n"
             f"- Date: {answers.get('date','')}\n"
             f"- Venue: {answers.get('venue','')}\n"
@@ -252,10 +292,23 @@ def generate_event_plan():
             except Exception:
                 pass
 
-        plan_text_for_message = json.dumps(plan_json, ensure_ascii=False)
+        # Create a short spoken summary (in target language)
+        summary_text = (
+            f"I've prepared a detailed {event_type} plan based on your inputs. You can review the full plan on the left panel."
+        )
+        if lang and lang != 'en':
+            try:
+                summary_text = translator.translate(summary_text, src='en', dest=lang).text
+            except Exception:
+                pass
+
+        plan_text_for_message = None  # avoid speaking JSON
         response_payload = {
+            "html_response": (
+                f"<div class='bg-purple-600/70 text-white p-4 rounded-lg max-w-md mx-auto'>{summary_text}</div>"
+            ),
             "messages": [
-                {"text": plan_text_for_message, "facialExpression": "default", "animation": "Idle"}
+                {"text": summary_text, "facialExpression": "smile", "animation": "Talking_1"}
             ],
             "plan_json": plan_json
         }

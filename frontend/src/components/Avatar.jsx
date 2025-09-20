@@ -104,7 +104,7 @@ const corresponding = {
 export function Avatar(props) {
   const readyPlayerMeModel = useGLTF("https://models.readyplayer.me/675f06a460c6e591da95393d.glb?morphTargets=ARKit,Oculus+Visemes,mouthOpen,mouthSmile,eyesClosed,eyesLookUp,eyesLookDown&textureSizeLimit=1024&textureFormat=png");
   const { nodes, materials, scene } = readyPlayerMeModel;
-  const { message, onMessagePlayed, chat } = useChat();
+  const { message, onMessagePlayed, chat, language } = useChat();
   
   // State management
   const [speaking, setSpeaking] = useState(false);
@@ -143,16 +143,32 @@ export function Avatar(props) {
       }
 
       const voices = window.speechSynthesis.getVoices();
-      const selectedVoice = voices.find(
-        voice => 
-          voice.name.includes('Google US English') ||
-          voice.name.includes('Microsoft Zira') ||
-          voice.name.includes('keerthi') ||
-          (voice.name.includes('Female') && voice.lang.includes('en'))
-      ) || voices[0];
+      const pickVoice = () => {
+        const langMap = {
+          en: ['en-IN', 'en-US', 'en-GB'],
+          ta: ['ta-IN'],
+          te: ['te-IN'],
+          ml: ['ml-IN'],
+          hi: ['hi-IN']
+        };
+        const prefs = langMap[language] || ['en-IN','en-US'];
+        for (const pref of prefs) {
+          const v = voices.find(v => v.lang && v.lang.toLowerCase().startsWith(pref.toLowerCase()));
+          if (v) return v;
+        }
+        // Fallback by name hints
+        if (language === 'hi') return voices.find(v=>/Hindi/i.test(v.name)) || voices[0];
+        if (language === 'ta') return voices.find(v=>/Tamil|ta-IN/i.test(v.name)) || voices[0];
+        if (language === 'te') return voices.find(v=>/Telugu|te-IN/i.test(v.name)) || voices[0];
+        if (language === 'ml') return voices.find(v=>/Malayalam|ml-IN/i.test(v.name)) || voices[0];
+        return voices.find(v => /English|en-/i.test(v.lang)) || voices[0];
+      };
+      const selectedVoice = pickVoice();
 
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.voice = selectedVoice;
+      // Set utterance language to match selection
+      utterance.lang = (selectedVoice && selectedVoice.lang) || (language === 'en' ? 'en-IN' : language + '-IN');
       utterance.rate = 1.0;
       utterance.pitch = 1.0;
       utterance.volume = 1.0;
