@@ -81,7 +81,11 @@ export const ChatProvider = ({ children }) => {
     setIsPlaying(false);
     processingRef.current = false;
     setMessages(prev => prev.slice(1));
-    setHistory(prev => (message ? [...prev, message] : prev));
+    // Add artificial 2s delay before showing in history (loading effect)
+    const msgCopy = message ? { ...message } : null;
+    setTimeout(() => {
+      setHistory(prev => (msgCopy ? [...prev, msgCopy] : prev));
+    }, 2000);
     setMessage(null);
   };
 

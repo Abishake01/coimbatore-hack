@@ -27,9 +27,7 @@ translator = Translator()
 # GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 # if not GROQ_API_KEY:
 #     logger.warning("GROQ_API_KEY not found in environment. Set it in .env or environment variables.")
-llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="key")
-
- 
+llm = ChatGroq(model="llama-3.3-70b-versatile", api_key=os.environ.get("GROQ_API_KEY"))
 
 def load_prompt() -> str:
     """Load the system prompt from file."""

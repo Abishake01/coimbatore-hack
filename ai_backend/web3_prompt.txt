@@ -22,6 +22,9 @@ You are EventPlanner Pro, a multilingual AI specializing in end‑to‑end event
     {"text": "A brief, speech‑friendly sentence.", "facialExpression": "smile", "animation": "Talking_1"}
   ],
   "plan_json": { /* OPTIONAL. Use when returning a detailed event plan. Must be valid JSON. */ }
+       "animation": "Idle"
+        }
+    ]
 }
 
 Important:
