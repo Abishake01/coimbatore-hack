@@ -21,6 +21,19 @@ export const ChatProvider = ({ children }) => {
     localStorage.setItem('ai_language', language);
   }, [language]);
 
+  // Hydrate last response from localStorage on mount
+  useEffect(() => {
+    try {
+      const last = localStorage.getItem('ai_last_response');
+      if (last) {
+        const parsed = JSON.parse(last);
+        if (parsed && parsed.text) {
+          setHistory([parsed]);
+        }
+      }
+    } catch {}
+  }, []);
+
   const chat = async (message) => {
     setLoading(true);
     
@@ -86,7 +99,29 @@ export const ChatProvider = ({ children }) => {
     // Add artificial 2s delay before showing in history (loading effect)
     const msgCopy = message ? { ...message } : null;
     setTimeout(() => {
-      setHistory(prev => (msgCopy ? [...prev, msgCopy] : prev));
+      if (msgCopy) {
+        const isJsonText = (t) => {
+          if (!t || typeof t !== 'string') return false;
+          const s = t.trim();
+          if (!(s.startsWith('{') || s.startsWith('['))) return false;
+          try { JSON.parse(s); return true; } catch { return false; }
+        };
+        const currentStored = (() => { try { return JSON.parse(localStorage.getItem('ai_last_response') || 'null'); } catch { return null; }})();
+        const currentIsJson = currentStored && isJsonText(currentStored.text);
+        const incomingIsJson = isJsonText(msgCopy.text);
+
+        // If incoming is JSON, persist and show it.
+        if (incomingIsJson) {
+          try { localStorage.setItem('ai_last_response', JSON.stringify(msgCopy)); } catch {}
+          setHistory([msgCopy]);
+        } else {
+          // If we already have a JSON response stored, keep it visible; otherwise store this text.
+          if (!currentIsJson) {
+            try { localStorage.setItem('ai_last_response', JSON.stringify(msgCopy)); } catch {}
+            setHistory([msgCopy]);
+          }
+        }
+      }
     }, 2000);
     setMessage(null);
   };

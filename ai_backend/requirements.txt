@@ -6,4 +6,7 @@ langchain_core
 langchain_community
 uuid
 langchain-groq
-googletrans
+googletrans==4.0.0-rc1
+beautifulsoup4
+python-dotenv
+groq
