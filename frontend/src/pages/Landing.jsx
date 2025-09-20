@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Menu, X, PlusSquare, Cpu } from "lucide-react";
 import Galaxy from "../components/Galaxy";
-
+import { Navigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 // Import Galaxy component (assuming it's in a separate file)
 // import Galaxy from "./Galaxy";
 
@@ -137,13 +138,15 @@ const Navbar = () => {
 
 // Hero Section
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   const handleGetStarted = () => {
-    Navigate('/dashboard')
+    navigate('/dashboard');
   };
 
-  const handleTryDemo = () => {
-   Navigate('/dashboard')
-  };
+  function handleTryDemo() {
+    navigate("/dashboard");
+  }
 
   return (
     <section id="home" className="relative overflow-hidden min-h-screen w-full flex items-center justify-center">
