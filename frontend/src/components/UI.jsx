@@ -24,7 +24,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({
     date: '20 Oct 2025',
-    venue: 'Convention Center',
+    venue: 'NIT, Coimabtore',
     people: '300 attendees',
     time: '2 days',
     budget: '₹5,00,000'

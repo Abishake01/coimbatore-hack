@@ -1,8 +1,8 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Landing from './pages/Landing';
+
 import Dashboard from './pages/Dashboard';
 import AvatarPage from './pages/AvatarPage';
-
+import Landing from './pages/Landing';
 function App() {
   return (
     <BrowserRouter>
