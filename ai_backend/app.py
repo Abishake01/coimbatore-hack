@@ -29,29 +29,7 @@ translator = Translator()
 #     logger.warning("GROQ_API_KEY not found in environment. Set it in .env or environment variables.")
 llm = ChatGroq(model="llama-3.3-70b-versatile", api_key="key")
 
-# Enhanced land price data with regional support
-LAND_PRICES = {
-    "hyderabad": {
-        "urban": 75000,
-        "suburban": 45000,
-        "rural": 20000
-    },
-    "chennai": {
-        "urban": 70000,
-        "suburban": 40000,
-        "rural": 18000
-    },
-    "telangana": {
-        "urban": 50000,
-        "suburban": 30000,
-        "rural": 10000
-    },
-    "karnataka": {
-        "urban": 55000,
-        "suburban": 35000,
-        "rural": 12000
-    }
-}
+ 
 
 def load_prompt() -> str:
     """Load the system prompt from file."""
@@ -164,33 +142,6 @@ def extract_region(query: str) -> str:
     elif "karnataka" in query:
         return "karnataka"
     return "telangana"  # Default
-
-def enhance_with_land_price(response: dict, region: str) -> dict:
-    """Enhance response with land price information."""
-    prices = LAND_PRICES.get(region, LAND_PRICES["telangana"])
-    
-    price_info = (
-        f"Current land prices in {region.capitalize()}:\n"
-        f"🏙️ Urban: ₹{prices['urban']:,}/acre\n"
-        f"🏡 Suburban: ₹{prices['suburban']:,}/acre\n"
-        f"🌄 Rural: ₹{prices['rural']:,}/acre"
-    )
-    
-    if 'html_response' in response:
-        response['html_response'] = response['html_response'].replace(
-            "</div>", 
-            f"<br><br>{price_info}</div>"
-        )
-    
-    if len(response['messages']) > 0:
-        response['messages'][0]['text'] = (
-            f"Current land prices in {region.capitalize()}. "
-            f"Urban: {prices['urban']} per acre. "
-            f"Suburban: {prices['suburban']} per acre. "
-            f"Rural: {prices['rural']} per acre."
-        )
-    
-    return response
 
 def create_fallback_response(text: str, language: str) -> dict:
     """Create a fallback response when JSON parsing fails."""
