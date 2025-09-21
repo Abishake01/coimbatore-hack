@@ -15,6 +15,55 @@ const AI_TYPES = [
   { key: 'christmas', name: 'Christmas AI' },
 ];
 
+// Minimal i18n dictionary for visible UI labels
+const I18N = {
+  en: {
+    eventManagement: 'Event Management',
+    planWithAI: 'Plan events with AI assistance and a 3D avatar.',
+    aiHub: 'AI Hub',
+    chooseAI: 'Choose an AI specialized for your event.',
+    planner: 'Planner',
+    assistant: 'Assistant',
+    fillForm: 'Fill the form and generate the plan',
+    language: 'Language',
+    provideDetails: 'Provide event details',
+    loadingQuestions: 'Loading questions…',
+    generatePlan: 'Generate Plan',
+    aiResponses: 'AI Responses',
+    typeMessage: 'Type a message...'
+  },
+  ta: {
+    eventManagement: 'நிகழ்ச்சி மேலாண்மை',
+    planWithAI: 'AI மற்றும் 3D அவதாரத்தின் உதவியுடன் நிகழ்ச்சிகளைத் திட்டமிடுங்கள்.',
+    aiHub: 'AI மையம்',
+    chooseAI: 'உங்கள் நிகழ்ச்சிக்கான சிறப்பு AI ஐத் தேர்வு செய்யவும்.',
+    planner: 'திட்டமிடுபவர்',
+    assistant: 'உதவியாளர்',
+    fillForm: 'படிவத்தை நிரப்பி திட்டத்தை உருவாக்கவும்',
+    language: 'மொழி',
+    provideDetails: 'நிகழ்ச்சி விவரங்களை வழங்கவும்',
+    loadingQuestions: 'கேள்விகள் ஏற்றப்படுகிறது…',
+    generatePlan: 'திட்டத்தை உருவாக்கு',
+    aiResponses: 'AI பதில்கள்',
+    typeMessage: 'செய்தியை தட்டச்சு செய்யவும்...'
+  },
+  hi: {
+    eventManagement: 'इवेंट प्रबंधन',
+    planWithAI: 'AI और 3D अवतार की मदद से इवेंट प्लान करें।',
+    aiHub: 'AI हब',
+    chooseAI: 'अपने इवेंट के लिए विशेष AI चुनें।',
+    planner: 'प्लानर',
+    assistant: 'सहायक',
+    fillForm: 'फॉर्म भरें और प्लान जनरेट करें',
+    language: 'भाषा',
+    provideDetails: 'इवेंट विवरण दें',
+    loadingQuestions: 'प्रश्न लोड हो रहे हैं…',
+    generatePlan: 'प्लान बनाएं',
+    aiResponses: 'AI उत्तर',
+    typeMessage: 'संदेश टाइप करें...'
+  }
+};
+
 export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const input = useRef();
   const [isListening, setIsListening] = useState(false);
@@ -46,7 +95,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
     const loadQuestions = async () => {
       if (stage !== 'qna' || !selectedAI) return;
       try {
-        const res = await fetch(`${apiBase}/api/event-questions/${selectedAI}`);
+        const res = await fetch(`${apiBase}/api/event-questions/${selectedAI}?lang=${encodeURIComponent(language || 'en')}`);
         const data = await res.json();
         const qs = Array.isArray(data?.questions) ? data.questions : [];
         setQuestions(qs);
@@ -78,6 +127,8 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const proceedQna = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
     setStage('chat');
+    // Intentional delay before generating the plan
+    await new Promise((resolve) => setTimeout(resolve, 2000));
     await askPlan(selectedAI || 'event', answers);
   };
 
@@ -130,31 +181,31 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
         <div className="self-start backdrop-blur-md bg-white bg-opacity-50 p-3 sm:p-4 rounded-lg max-w-full sm:max-w-2xl">
           {stage === 'landing' && (
             <>
-              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">Event Management</h1>
-              <p className="text-xs sm:text-sm lg:text-base">Plan events with AI assistance and a 3D avatar.</p>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{(I18N[language]||I18N.en).eventManagement}</h1>
+              <p className="text-xs sm:text-sm lg:text-base">{(I18N[language]||I18N.en).planWithAI}</p>
             </>
           )}
           {stage === 'dashboard' && (
             <>
-              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">AI Hub</h1>
-              <p className="text-xs sm:text-sm lg:text-base">Choose an AI specialized for your event.</p>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{(I18N[language]||I18N.en).aiHub}</h1>
+              <p className="text-xs sm:text-sm lg:text-base">{(I18N[language]||I18N.en).chooseAI}</p>
             </>
           )}
           {stage === 'qna' && (
             <>
-              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{selectedAI?.toUpperCase()} Planner</h1>
-              <p className="text-xs sm:text-sm lg:text-base">Fill the form and generate the plan</p>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{`${(selectedAI||'').toUpperCase()} ${(I18N[language]||I18N.en).planner}`}</h1>
+              <p className="text-xs sm:text-sm lg:text-base">{(I18N[language]||I18N.en).fillForm}</p>
             </>
           )}
           {stage === 'chat' && (
             <>
-              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{selectedAI?.toUpperCase()} Assistant</h1>
-              <p className="text-xs sm:text-sm lg:text-base">Chat and refine your plan. The avatar will speak the plan.</p>
+              <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{`${(selectedAI||'').toUpperCase()} ${(I18N[language]||I18N.en).assistant}`}</h1>
+              <p className="text-xs sm:text-sm lg:text-base">{(I18N[language]||I18N.en).aiResponses}</p>
             </>
           )}
           {/* Language selector */}
           <div className="mt-2">
-            <label className="text-xs mr-2">Language</label>
+            <label className="text-xs mr-2">{(I18N[language]||I18N.en).language}</label>
             <select
               value={language}
               onChange={(e)=>setLanguage(e.target.value)}
@@ -267,7 +318,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
         <div className="flex items-center gap-2 pointer-events-auto max-w-screen-sm w-full mx-auto mt-4">
           <input
             className="w-full placeholder:text-gray-800 placeholder:italic p-3 sm:p-4 rounded-md bg-opacity-50 bg-white backdrop-blur-md text-xs sm:text-sm"
-            placeholder="Type a message..."
+            placeholder={(I18N[language]||I18N.en).typeMessage}
             ref={input}
             onKeyDown={(e) => {
               if (e.key === "Enter") {
@@ -330,31 +381,30 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
 
       {stage === 'qna' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          {/* Subtle background overlay for contrast */}
-          <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-purple-100/30 to-blue-100/30 backdrop-blur-[2px]" />
-          <form onSubmit={proceedQna} className="relative pointer-events-auto w-full max-w-xl rounded-2xl p-6 md:p-8 bg-white shadow-2xl border border-purple-200/60">
-            <h2 className="text-2xl font-extrabold mb-6 text-purple-800">Provide event details</h2>
+          {/* Darker purple overlay to remove white glare from avatar background */}
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-indigo-900/30 to-black/40 backdrop-blur-sm" />
+          <form onSubmit={proceedQna} className="relative pointer-events-auto w-full max-w-xl rounded-2xl p-6 md:p-8 bg-white/10 backdrop-blur-md text-white shadow-2xl border border-white/30">
+            <h2 className="text-2xl font-extrabold mb-6">{(I18N[language]||I18N.en).provideDetails}</h2>
             {questions && questions.length ? (
               <div className="space-y-4">
                 {questions.map((q) => (
                   <div key={q.key} className="space-y-2">
-                    <label className="block text-sm font-semibold text-gray-800">{q.label || q.question}</label>
+                    <label className="block text-sm font-semibold opacity-90">{q.label || q.question}</label>
                     <input
                       type="text"
                       value={answers[q.key] ?? ''}
                       onChange={e => setAnswers({ ...answers, [q.key]: e.target.value })}
                       placeholder={q.placeholder || ''}
-                      className="w-full p-3 rounded-lg border border-gray-300 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
+                      className="w-full p-3 rounded-lg border border-white/30 bg-white/80 text-gray-900 placeholder:text-gray-600 focus:outline-none focus:ring-2 focus:ring-white/70 focus:border-transparent transition"
                     />
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-sm text-gray-600">Loading questions…</div>
+              <div className="text-sm opacity-90">{(I18N[language]||I18N.en).loadingQuestions}</div>
             )}
-            <div className="flex justify-between items-center mt-8">
-              <button type="button" onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition">Back</button>
-              <button type="submit" className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold shadow hover:shadow-lg hover:scale-[1.02] active:scale-95 transition">Generate Plan</button>
+            <div className="flex justify-end items-center mt-8 gap-3">
+              <button type="submit" className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-500 to-fuchsia-500 text-white font-semibold shadow hover:shadow-lg hover:scale-[1.02] active:scale-95 transition">{(I18N[language]||I18N.en).generatePlan}</button>
             </div>
           </form>
         </div>
@@ -362,8 +412,8 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
 
       {stage === 'chat' && (
         <div className="absolute left-4 top-36 z-10 w-96 max-w-[85vw] pointer-events-none">
-          <div className="pointer-events-auto bg-white/80 rounded-xl shadow border p-3">
-            <div className="font-semibold text-purple-800 mb-2">AI Responses</div>
+          <div className="pointer-events-auto bg-purple-700/90 text-white rounded-xl shadow-xl border border-purple-300/40 p-3">
+            <div className="font-semibold mb-2">{(I18N[language]||I18N.en).aiResponses}</div>
             <div className="max-h-80 overflow-y-auto space-y-2">
               {message && (
                 <div className="bg-purple-50 rounded p-2 text-xs text-gray-600 animate-pulse">Generating response…</div>
@@ -382,8 +432,8 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
                   }
                 } catch (e) {}
                 return (
-                  <div className="bg-purple-100 rounded p-2 text-sm text-gray-800 whitespace-pre-wrap">
-                    {isJson ? <pre className="text-xs overflow-x-auto">{pretty}</pre> : t}
+                  <div className="bg-purple-900/40 rounded p-2 text-sm whitespace-pre-wrap">
+                    {isJson ? <pre className="text-xs overflow-x-auto text-white">{pretty}</pre> : t}
                   </div>
                 );
               })()}

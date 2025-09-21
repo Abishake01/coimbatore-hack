@@ -291,7 +291,31 @@ def get_event_types():
 
 @app.route('/api/event-questions/<event_type>', methods=['GET'])
 def get_event_questions(event_type: str):
-    return jsonify({"questions": EVENT_QUESTIONS.get(event_type, EVENT_QUESTIONS["default"])})
+    qs = EVENT_QUESTIONS.get(event_type, EVENT_QUESTIONS["default"]) or []
+    lang = request.args.get('lang', 'en').lower()
+    if lang and lang != 'en':
+        try:
+            def tr_text(text: str) -> str:
+                try:
+                    return translator.translate(text, src='en', dest=lang).text
+                except Exception:
+                    return text
+            translated = []
+            for q in qs:
+                if not isinstance(q, dict):
+                    continue
+                q2 = dict(q)
+                if 'label' in q2 and isinstance(q2['label'], str):
+                    q2['label'] = tr_text(q2['label'])
+                if 'question' in q2 and isinstance(q2['question'], str):
+                    q2['question'] = tr_text(q2['question'])
+                if 'placeholder' in q2 and isinstance(q2['placeholder'], str):
+                    q2['placeholder'] = tr_text(q2['placeholder'])
+                translated.append(q2)
+            qs = translated
+        except Exception:
+            pass
+    return jsonify({"questions": qs})
 
 
 @app.route('/api/event-plan', methods=['POST'])

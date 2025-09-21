@@ -12,10 +12,12 @@ export default function AvatarPage() {
     <div className="min-h-screen w-full">
       <Loader />
       <Leva hidden />
-      <div className="relative w-full h-screen">
+      <div className="relative w-full h-screen bg-gradient-to-b from-purple-700 via-purple-800 to-purple-900">
         <Canvas
           shadows
           camera={{ position: [0, 0, 1], fov: 30 }}
+          gl={{ alpha: true }}
+          onCreated={({ gl }) => gl.setClearColor('transparent', 0)}
           className="absolute inset-0 z-0"
         >
           <Experience />
