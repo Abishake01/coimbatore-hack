@@ -20,7 +20,7 @@ export default function AvatarPage() {
         >
           <Experience />
         </Canvas>
-        <div className="absolute inset-0 z-10 pointer-events-none">
+        <div className="absolute inset-0 z-10">
           {/* Start at Q&A for the selected AI type, then switch to chat after generation */}
           <UI initialStage="qna" initialAI={type} />
         </div>

@@ -4,13 +4,15 @@ import { FaMicrophone } from "react-icons/fa";
 import { IoSend } from "react-icons/io5";
 
 const AI_TYPES = [
-  { key: 'hackathon', name: 'Hackathon AI', color: 'from-blue-500 to-indigo-600' },
-  { key: 'wedding', name: 'Wedding AI', color: 'from-pink-500 to-rose-600' },
-  { key: 'birthday', name: 'Birthday AI', color: 'from-yellow-400 to-orange-500' },
-  { key: 'corporate', name: 'Corporate AI', color: 'from-gray-500 to-blue-700' },
-  { key: 'concert', name: 'Concert AI', color: 'from-purple-500 to-fuchsia-600' },
-  { key: 'festival', name: 'Fest AI', color: 'from-green-500 to-teal-600' },
-  { key: 'sports', name: 'Sports AI', color: 'from-red-500 to-orange-600' },
+  { key: 'hackathon', name: 'Hackathon AI' },
+  { key: 'wedding', name: 'Wedding AI' },
+  { key: 'birthday', name: 'Birthday AI' },
+  { key: 'corporate', name: 'Corporate AI' },
+  { key: 'concert', name: 'Concert AI' },
+  { key: 'festival', name: 'Fest AI' },
+  { key: 'sports', name: 'Sports AI' },
+  { key: 'school', name: 'School AI' },
+  { key: 'christmas', name: 'Christmas AI' },
 ];
 
 export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
@@ -328,19 +330,21 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
 
       {stage === 'qna' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <form onSubmit={proceedQna} className="backdrop-blur-md bg-white/50 border border-white/60 rounded-2xl p-6 w-full max-w-xl pointer-events-auto">
-            <h2 className="text-xl font-bold mb-4 text-purple-800">Provide event details</h2>
+          {/* Subtle background overlay for contrast */}
+          <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-purple-100/30 to-blue-100/30 backdrop-blur-[2px]" />
+          <form onSubmit={proceedQna} className="relative pointer-events-auto w-full max-w-xl rounded-2xl p-6 md:p-8 bg-white shadow-2xl border border-purple-200/60">
+            <h2 className="text-2xl font-extrabold mb-6 text-purple-800">Provide event details</h2>
             {questions && questions.length ? (
               <div className="space-y-4">
                 {questions.map((q) => (
                   <div key={q.key} className="space-y-2">
-                    <label className="block text-sm font-medium">{q.label || q.question}</label>
+                    <label className="block text-sm font-semibold text-gray-800">{q.label || q.question}</label>
                     <input
                       type="text"
                       value={answers[q.key] ?? ''}
                       onChange={e => setAnswers({ ...answers, [q.key]: e.target.value })}
                       placeholder={q.placeholder || ''}
-                      className="w-full p-3 rounded-md border"
+                      className="w-full p-3 rounded-lg border border-gray-300 bg-white placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent transition"
                     />
                   </div>
                 ))}
@@ -348,9 +352,9 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
             ) : (
               <div className="text-sm text-gray-600">Loading questions…</div>
             )}
-            <div className="flex justify-between mt-6">
-              <button type="button" onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-md border">Back</button>
-              <button type="submit" className="px-6 py-2 rounded-md bg-purple-600 text-white">Generate Plan</button>
+            <div className="flex justify-between items-center mt-8">
+              <button type="button" onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-lg border border-gray-300 hover:bg-gray-50 transition">Back</button>
+              <button type="submit" className="px-6 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white font-semibold shadow hover:shadow-lg hover:scale-[1.02] active:scale-95 transition">Generate Plan</button>
             </div>
           </form>
         </div>
