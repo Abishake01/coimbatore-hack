@@ -67,7 +67,7 @@ const I18N = {
 export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   const input = useRef();
   const [isListening, setIsListening] = useState(false);
-  const { chat, askPlan, loading, cameraZoomed, setCameraZoomed, message, history, language, setLanguage } = useChat();
+  const { chat, askPlan, clearHistory, loading, cameraZoomed, setCameraZoomed, message, history, language, setLanguage, generatingPlan } = useChat();
 
   // Stages: landing -> dashboard -> qna -> chat
   const [stage, setStage] = useState(initialStage || 'landing');
@@ -81,6 +81,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
     budget: '₹5,00,000'
   });
   const [questions, setQuestions] = useState([]);
+  const [qError, setQError] = useState('');
 
   // API base to fetch event questions
   const apiBase = (import.meta.env.VITE_API_BASE || (import.meta.env.VITE_BACKEND_URL ? import.meta.env.VITE_BACKEND_URL.replace(/\/chat$/, '') : 'http://localhost:5000'));
@@ -96,9 +97,11 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
       if (stage !== 'qna' || !selectedAI) return;
       try {
         const res = await fetch(`${apiBase}/api/event-questions/${selectedAI}?lang=${encodeURIComponent(language || 'en')}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
         const qs = Array.isArray(data?.questions) ? data.questions : [];
         setQuestions(qs);
+        setQError('');
         // Seed defaults from placeholders if provided
         const seeded = { ...answers };
         qs.forEach(q => {
@@ -108,7 +111,20 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
         });
         setAnswers(seeded);
       } catch (e) {
-        // Silent fail, keep existing defaults
+        // Fallback: generic 5 questions so the user can still proceed
+        console.error('Failed to fetch event questions', e);
+        setQError('Could not load event-specific questions. Using defaults.');
+        const fallback = [
+          { step: 1, key: 'date', label: 'Date', question: 'When is the event?', placeholder: '20 Oct 2025' },
+          { step: 2, key: 'venue', label: 'Venue', question: 'Where will it take place?', placeholder: 'NIT, Coimbatore' },
+          { step: 3, key: 'people', label: 'People', question: 'How many attendees?', placeholder: '300 attendees' },
+          { step: 4, key: 'time', label: 'Time', question: 'What is the duration or start time?', placeholder: '2 days' },
+          { step: 5, key: 'budget', label: 'Budget', question: 'What is your budget?', placeholder: '₹5,00,000' },
+        ];
+        setQuestions(fallback);
+        const seeded = { ...answers };
+        fallback.forEach(q => { if (!seeded[q.key]) seeded[q.key] = q.placeholder; });
+        setAnswers(seeded);
       }
     };
     loadQuestions();
@@ -126,9 +142,9 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
 
   const proceedQna = async (e) => {
     if (e && e.preventDefault) e.preventDefault();
+    // Clear any previous JSON so the left panel is empty while generating
+    if (typeof clearHistory === 'function') clearHistory();
     setStage('chat');
-    // Intentional delay before generating the plan
-    await new Promise((resolve) => setTimeout(resolve, 2000));
     await askPlan(selectedAI || 'event', answers);
   };
 
@@ -385,6 +401,9 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
           <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-indigo-900/30 to-black/40 backdrop-blur-sm" />
           <form onSubmit={proceedQna} className="relative pointer-events-auto w-full max-w-xl rounded-2xl p-6 md:p-8 bg-white/10 backdrop-blur-md text-white shadow-2xl border border-white/30">
             <h2 className="text-2xl font-extrabold mb-6">{(I18N[language]||I18N.en).provideDetails}</h2>
+            {qError && (
+              <div className="text-xs mb-2 text-yellow-200">{qError}</div>
+            )}
             {questions && questions.length ? (
               <div className="space-y-4">
                 {questions.map((q) => (
@@ -415,10 +434,10 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
           <div className="pointer-events-auto bg-purple-700/90 text-white rounded-xl shadow-xl border border-purple-300/40 p-3">
             <div className="font-semibold mb-2">{(I18N[language]||I18N.en).aiResponses}</div>
             <div className="max-h-80 overflow-y-auto space-y-2">
-              {message && (
+              {(generatingPlan || message) && (
                 <div className="bg-purple-50 rounded p-2 text-xs text-gray-600 animate-pulse">Generating response…</div>
               )}
-              {(() => {
+              {!generatingPlan && (() => {
                 const m = history[history.length - 1];
                 if (!m) return null;
                 const t = m.text || '';

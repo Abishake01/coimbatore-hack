@@ -14,7 +14,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+# Permissive CORS for browser deployments (Vercel/Render)
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -61,6 +62,10 @@ def translate_response(response: dict, target_lang: str) -> dict:
     except Exception as e:
         logger.error(f"Translation error: {str(e)}")
         return response  # Return untranslated response if error occurs
+
+@app.route('/health', methods=['GET'])
+def health():
+    return jsonify({"status": "ok"})
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -406,4 +411,5 @@ def generate_event_plan():
         return jsonify({"error": "Failed to generate plan"}), 500
 
 if __name__ == '__main__':
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    port = int(os.environ.get("PORT", 5000))
+    app.run(debug=True, host="0.0.0.0", port=port)

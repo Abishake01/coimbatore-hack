@@ -16,6 +16,12 @@ export const ChatProvider = ({ children }) => {
   const [language, setLanguage] = useState(
     localStorage.getItem('ai_language') || 'en'
   );
+  const [generatingPlan, setGeneratingPlan] = useState(false);
+
+  const clearHistory = () => {
+    try { localStorage.removeItem('ai_last_response'); } catch {}
+    setHistory([]);
+  };
 
   useEffect(() => {
     localStorage.setItem('ai_language', language);
@@ -67,6 +73,7 @@ export const ChatProvider = ({ children }) => {
   // Helper to build plan request
   const askPlan = async (eventType, answers) => {
     try {
+      setGeneratingPlan(true);
       const resp = await fetch(`${apiBase}/api/event-plan`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -76,9 +83,13 @@ export const ChatProvider = ({ children }) => {
       const inbound = Array.isArray(data?.response?.messages) ? data.response.messages : [];
       // If plan_json exists, enqueue a JSON message first so the left panel shows it (Avatar will skip speaking it)
       const jsonMsg = data?.response?.plan_json ? [{ text: JSON.stringify(data.response.plan_json) }] : [];
+      // Enforce a 2-second delay before showing any JSON message
+      await new Promise((r) => setTimeout(r, 2000));
       setMessages(prev => [...prev, ...jsonMsg, ...inbound]);
     } catch (e) {
       console.error('askPlan error', e);
+    } finally {
+      setGeneratingPlan(false);
     }
   };
 
@@ -96,10 +107,9 @@ export const ChatProvider = ({ children }) => {
     setIsPlaying(false);
     processingRef.current = false;
     setMessages(prev => prev.slice(1));
-    // Add artificial 2s delay before showing in history (loading effect)
+    // Immediately reflect processed message into history/localStorage
     const msgCopy = message ? { ...message } : null;
-    setTimeout(() => {
-      if (msgCopy) {
+    if (msgCopy) {
         const isJsonText = (t) => {
           if (!t || typeof t !== 'string') return false;
           const s = t.trim();
@@ -121,8 +131,7 @@ export const ChatProvider = ({ children }) => {
             setHistory([msgCopy]);
           }
         }
-      }
-    }, 2000);
+    }
     setMessage(null);
   };
 
@@ -131,6 +140,7 @@ export const ChatProvider = ({ children }) => {
       value={{
         chat,
         askPlan,
+        clearHistory,
         message,
         onMessagePlayed,
         loading,
@@ -139,6 +149,7 @@ export const ChatProvider = ({ children }) => {
         history,
         language,
         setLanguage,
+        generatingPlan,
       }}
     >
       {children}
