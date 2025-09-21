@@ -10,6 +10,7 @@ function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/avatar/:type" element={<AvatarPage />} />
+        <Route path="/events/:type" element={<AvatarPage />} />
       </Routes>
     </BrowserRouter>
   );

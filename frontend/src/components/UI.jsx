@@ -21,7 +21,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
   // Stages: landing -> dashboard -> qna -> chat
   const [stage, setStage] = useState(initialStage || 'landing');
   const [selectedAI, setSelectedAI] = useState(initialAI || null);
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(1); // retained for compatibility, not used in form mode
   const [answers, setAnswers] = useState({
     date: '20 Oct 2025',
     venue: 'NIT, Coimabtore',
@@ -73,11 +73,8 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
     }
   };
 
-  const proceedQna = async () => {
-    if (step < 5) {
-      setStep(step + 1);
-      return;
-    }
+  const proceedQna = async (e) => {
+    if (e && e.preventDefault) e.preventDefault();
     setStage('chat');
     await askPlan(selectedAI || 'event', answers);
   };
@@ -144,7 +141,7 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
           {stage === 'qna' && (
             <>
               <h1 className="font-bold text-xl lg:text-2xl text-purple-800">{selectedAI?.toUpperCase()} Planner</h1>
-              <p className="text-xs sm:text-sm lg:text-base">Step {step} of 5</p>
+              <p className="text-xs sm:text-sm lg:text-base">Fill the form and generate the plan</p>
             </>
           )}
           {stage === 'chat' && (
@@ -331,30 +328,31 @@ export const UI = ({ hidden, initialStage, initialAI, ...props }) => {
 
       {stage === 'qna' && (
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
-          <div className="backdrop-blur-md bg-white/50 border border-white/60 rounded-2xl p-6 w-full max-w-xl pointer-events-auto">
+          <form onSubmit={proceedQna} className="backdrop-blur-md bg-white/50 border border-white/60 rounded-2xl p-6 w-full max-w-xl pointer-events-auto">
             <h2 className="text-xl font-bold mb-4 text-purple-800">Provide event details</h2>
-            {(() => {
-              const q = questions[step - 1];
-              if (!q) return <div className="text-sm text-gray-600">Loading questions…</div>;
-              const val = answers[q.key] ?? '';
-              return (
-                <div className="space-y-3">
-                  <label className="block text-sm font-medium">{q.label || q.question}</label>
-                  <input
-                    type="text"
-                    value={val}
-                    onChange={e => setAnswers({ ...answers, [q.key]: e.target.value })}
-                    placeholder={q.placeholder || ''}
-                    className="w-full p-3 rounded-md border"
-                  />
-                </div>
-              );
-            })()}
+            {questions && questions.length ? (
+              <div className="space-y-4">
+                {questions.map((q) => (
+                  <div key={q.key} className="space-y-2">
+                    <label className="block text-sm font-medium">{q.label || q.question}</label>
+                    <input
+                      type="text"
+                      value={answers[q.key] ?? ''}
+                      onChange={e => setAnswers({ ...answers, [q.key]: e.target.value })}
+                      placeholder={q.placeholder || ''}
+                      className="w-full p-3 rounded-md border"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-sm text-gray-600">Loading questions…</div>
+            )}
             <div className="flex justify-between mt-6">
-              <button onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-md border">Back</button>
-              <button onClick={proceedQna} className="px-6 py-2 rounded-md bg-purple-600 text-white">{step < 5 ? 'Next' : 'Generate Plan'}</button>
+              <button type="button" onClick={() => setStage('dashboard')} className="px-4 py-2 rounded-md border">Back</button>
+              <button type="submit" className="px-6 py-2 rounded-md bg-purple-600 text-white">Generate Plan</button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 

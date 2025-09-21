@@ -206,7 +206,9 @@ EVENT_TYPES = {
     "corporate": {"name": "Corporate AI", "icon": "🏢", "color": "from-gray-500 to-blue-700"},
     "concert": {"name": "Concert AI", "icon": "🎵", "color": "from-purple-500 to-fuchsia-600"},
     "festival": {"name": "Fest AI", "icon": "🎪", "color": "from-green-500 to-teal-600"},
-    "sports": {"name": "Sports AI", "icon": "⚽", "color": "from-red-500 to-orange-600"}
+    "sports": {"name": "Sports AI", "icon": "⚽", "color": "from-red-500 to-orange-600"},
+    "school": {"name": "School AI", "icon": "🏫", "color": "from-emerald-500 to-teal-600"},
+    "christmas": {"name": "Christmas AI", "icon": "🎄", "color": "from-red-500 to-green-600"}
 }
 
 EVENT_QUESTIONS = {
@@ -266,6 +268,20 @@ EVENT_QUESTIONS = {
         {"step": 4, "key": "time", "label": "Schedule", "question": "Match schedule pattern?", "placeholder": "League + Finals"},
         {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹12,00,000"},
     ],
+    "school": [
+        {"step": 1, "key": "date", "label": "Event Date", "question": "When is the school event?", "placeholder": "15 Aug 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "School block / ground?", "placeholder": "Main Auditorium"},
+        {"step": 3, "key": "people", "label": "Participants", "question": "Students/parents/teachers count?", "placeholder": "800 students, 200 parents"},
+        {"step": 4, "key": "time", "label": "Agenda", "question": "Start time and schedule?", "placeholder": "9 AM–1 PM"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹2,50,000"},
+    ],
+    "christmas": [
+        {"step": 1, "key": "date", "label": "Celebration Date", "question": "When is the celebration?", "placeholder": "24–25 Dec 2026"},
+        {"step": 2, "key": "venue", "label": "Venue", "question": "Church/Hall/Community center?", "placeholder": "St. Mary's Church Hall"},
+        {"step": 3, "key": "people", "label": "Attendees", "question": "Expected attendees?", "placeholder": "600"},
+        {"step": 4, "key": "time", "label": "Program Timing", "question": "Mass/time & cultural programs?", "placeholder": "7 PM Mass, 8–10 PM cultural"},
+        {"step": 5, "key": "budget", "label": "Budget", "question": "Budget?", "placeholder": "₹3,00,000"},
+    ],
 }
 
 @app.route('/api/event-types', methods=['GET'])
@@ -294,7 +310,9 @@ def generate_event_plan():
             "corporate": "Emphasize agenda, AV needs, registration flow, speaker management, and breakout sessions.",
             "concert": "Cover stage plot, sound/lighting, artist rider, security, ticketing, and entry/exit flow.",
             "festival": "Include multi-stage scheduling, stall/vendor zoning, crowd control, permissions, and sanitation.",
-            "sports": "Detail fixtures/schedule, officials, equipment, medical/safety, scorekeeping, and audience seating."
+            "sports": "Detail fixtures/schedule, officials, equipment, medical/safety, scorekeeping, and audience seating.",
+            "school": "Plan inauguration, student performances, prize distribution, safety, discipline committees, and parent management.",
+            "christmas": "Plan Mass/service timings, carols, nativity play, decor/lights, food distribution, crowd and parking management."
         }
 
         prompt = (
